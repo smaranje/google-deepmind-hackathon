@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://datasciencefestival.com/wp-content/uploads/2023/09/google-deepmind-logo.webp" alt="Google DeepMind" width="320">
+</p>
+
 # 10 Black Boxes. 40 Hours. 0.04 → 0.76.
 
 > *Ten hidden simulators. Equations sealed. A budget of 2,000 experiments each, and one shot to predict 4,000 steps into the future with nobody telling you how you're doing.*
