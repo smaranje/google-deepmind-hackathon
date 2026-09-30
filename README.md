@@ -11,10 +11,7 @@
 - What I built: a neural network with memory (a GRU) per system, plus physics-style models where the data was too thin for a network to work out the structure.
 - Result: mean Public score **0.04 → 0.735** in roughly 40 hours (rank 21 of 125 on the last published board I saw). My final submission is expected to score about **0.757** on Public. Final results aren't out yet.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/progress_dark.png">
-  <img src="assets/progress_light.png" alt="Line chart of the mean Public score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and an expected 0.757 for the final submission. Rank 1 on the last published board was 0.803." width="100%">
-</picture>
+![Line chart of the mean Public score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and an expected 0.757 for the final submission. Rank 1 on the last published board was 0.803.](assets/progress_light.png)
 
 ## Why this kind of forecasting matters
 
@@ -43,10 +40,7 @@ Each system has named controls and a few noisy readings. Equations and parameter
 
 How to read the scores: 1.0 would be a perfect forecast at every step. Each step scores `1 / (1 + error / σ)` with a hidden tolerance σ, so **0.75 means a typical error of about a third of that tolerance**. The final column is the Public leaderboard score of the model in my Final submission.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/systems_dark.png">
-  <img src="assets/systems_light.png" alt="Dumbbell chart of the Public score of each of the ten systems, first pass versus final submission. Gains range from +0.17 for power grid and hospital queue to +0.39 for supply chain and epidemic. Ad auction ends highest at 0.867 and social contagion lowest at 0.655." width="100%">
-</picture>
+![Dumbbell chart of the Public score of each of the ten systems, first pass versus final submission. Gains range from +0.17 for power grid and hospital queue to +0.39 for supply chain and epidemic. Ad auction ends highest at 0.867 and social contagion lowest at 0.655.](assets/systems_light.png)
 
 ## How it works
 

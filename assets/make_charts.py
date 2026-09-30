@@ -105,6 +105,6 @@ def systems(name, t):
 
 
 if __name__ == '__main__':
-    for nm, th in THEMES.items():
-        progress(nm, th); systems(nm, th)
+    for nm in ('light',):  # the README uses the light variants; add 'dark' here to render both
+        progress(nm, THEMES[nm]); systems(nm, THEMES[nm])
     print('wrote', ', '.join(sorted(p.name for p in OUT.glob('*.png'))))
