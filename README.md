@@ -9,9 +9,9 @@
 **In short**
 - The task: learn how a system responds to decisions (staffing, tolls, vaccination rates, water release) from under 2,000 experimental steps, then forecast a long sequence of decisions nobody has tried yet.
 - What I built: a neural network with memory (a GRU) per system, plus physics-style models where the data was too thin for a network to work out the structure.
-- Result: mean Public score **0.04 → 0.735** in roughly 40 hours (rank 21 of 125 on the last published board I saw). My final submission is expected to score about **0.757** on Public. Final results aren't out yet.
+- Result: the mean score went from **0.04 to 0.757** in roughly 40 hours. The **Final score is 0.7565** on the hidden Final episodes, within 0.001 of what the Public scores predicted.
 
-![Line chart of the mean Public score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and an expected 0.757 for the final submission. Rank 1 on the last published board was 0.803.](assets/progress_light.png)
+![Line chart of the mean score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and 0.757 for the final submission. Rank 1 on the last published Public board was 0.803.](assets/progress_light.png)
 
 ## Why this kind of forecasting matters
 
@@ -25,22 +25,22 @@ One honest caveat: the organizers built these ten systems as **invented mathemat
 
 Each system has named controls and a few noisy readings. Equations and parameters are hidden. In each one, two of three described "memory" mechanisms are switched on, and you aren't told which.
 
-| System | The real-world question it resembles | Controls → what gets forecast | What worked best | Public score |
+| System | The real-world question it resembles | Controls → what gets forecast | What worked best | Final score |
 |---|---|---|---|---|
-| **Ad auction** | How much to bid and spend to win impressions and conversions | bid, budget cap, targeting breadth → win rate, spend, conversions | 10-network GRU ensemble | **0.867** |
-| **Traffic** | How tolls, lane closures and signal timing change congestion | 6 controls (tolls, ramp metering, closures…) → flow and speed on two routes | GRU trained with extra weight on long steady periods | **0.821** |
-| **Wildlife** | How hunting quotas and habitat protection change predator and prey numbers | quota, habitat protection, corridor access → prey and predators in two regions | 10-network GRU ensemble | **0.799** |
-| **Reservoir** | How to release and withdraw water while keeping quality up | release rate, irrigation, withdrawal depth, aeration → level, inflow, outflow, quality | GRU ensemble + a fitted seasonal inflow curve | **0.788** |
-| **Power grid** | How to keep frequency stable while shifting demand and dispatching reserves | price signal, reserve dispatch, charging, interconnector → load, frequency, renewable share | GRU blended with a simple regression | 0.746 |
-| **Supply chain** | How ordering and staffing move inventory and shipments | order size, lead time, product mix, effort, maintenance → shipments, supplier and retail stock | action-history regression with physical limits (no negative stock, supplier cap) | 0.745 |
-| **Epidemic** | Which mix of school closure, masks and vaccination limits cases and hospital strain | 3 policies → daily cases, hospital load | GRU | 0.743 |
-| **Hospital queue** | When staffing, overtime and scheduling keep waits down without burning out staff | 6 controls → wait time, queue length, discharges | physics-style model + GRU | 0.711 |
-| **Market** | How interest rates and a transaction tax move price, volume and liquidity | interest rate, tax → price, volume, order-book depth | GRU trained with extra weight on long steady periods | 0.701 |
-| **Social contagion** | How seeding, incentives and outreach spread adoption across two communities | seeding, incentive, bridge outreach → adopters in each community | **physics simulator + GRU blend** | 0.655 |
+| **Ad auction** | How much to bid and spend to win impressions and conversions | bid, budget cap, targeting breadth → win rate, spend, conversions | 10-network GRU ensemble | **0.865** |
+| **Traffic** | How tolls, lane closures and signal timing change congestion | 6 controls (tolls, ramp metering, closures…) → flow and speed on two routes | GRU trained with extra weight on long steady periods | **0.827** |
+| **Reservoir** | How to release and withdraw water while keeping quality up | release rate, irrigation, withdrawal depth, aeration → level, inflow, outflow, quality | GRU ensemble + a fitted seasonal inflow curve | **0.784** |
+| **Wildlife** | How hunting quotas and habitat protection change predator and prey numbers | quota, habitat protection, corridor access → prey and predators in two regions | 10-network GRU ensemble | **0.782** |
+| **Power grid** | How to keep frequency stable while shifting demand and dispatching reserves | price signal, reserve dispatch, charging, interconnector → load, frequency, renewable share | GRU blended with a simple regression | 0.754 |
+| **Epidemic** | Which mix of school closure, masks and vaccination limits cases and hospital strain | 3 policies → daily cases, hospital load | GRU | 0.751 |
+| **Supply chain** | How ordering and staffing move inventory and shipments | order size, lead time, product mix, effort, maintenance → shipments, supplier and retail stock | action-history regression with physical limits (no negative stock, supplier cap) | 0.736 |
+| **Market** | How interest rates and a transaction tax move price, volume and liquidity | interest rate, tax → price, volume, order-book depth | GRU trained with extra weight on long steady periods | 0.704 |
+| **Hospital queue** | When staffing, overtime and scheduling keep waits down without burning out staff | 6 controls → wait time, queue length, discharges | physics-style model + GRU | 0.697 |
+| **Social contagion** | How seeding, incentives and outreach spread adoption across two communities | seeding, incentive, bridge outreach → adopters in each community | **physics simulator + GRU blend** | 0.666 |
 
-How to read the scores: 1.0 would be a perfect forecast at every step. Each step scores `1 / (1 + error / σ)` with a hidden tolerance σ, so **0.75 means a typical error of about a third of that tolerance**. The final column is the Public leaderboard score of the model in my Final submission.
+How to read the scores: 1.0 would be a perfect forecast at every step. Each step scores `1 / (1 + error / σ)` with a hidden tolerance σ, so **0.75 means a typical error of about a third of that tolerance**. The last column is the score on the hidden Final episodes.
 
-![Dumbbell chart of the Public score of each of the ten systems, first pass versus final submission. Gains range from +0.17 for power grid and hospital queue to +0.39 for supply chain and epidemic. Ad auction ends highest at 0.867 and social contagion lowest at 0.655.](assets/systems_light.png)
+![Dumbbell chart of the score of each of the ten systems, first pass on the Public leaderboard versus the Final result. Gains range from +0.16 for hospital queue to +0.40 for epidemic. Ad auction ends highest at 0.865 and social contagion lowest at 0.666.](assets/systems_light.png)
 
 ## How it works
 
@@ -88,7 +88,7 @@ Two AI-generated results also failed my audit. One "0.75" for reservoir came fro
 - **Little data.** Five runs of at most about 510 steps per system, against 4,000-step scoring. Local cross-validation was noisy (roughly ±0.03 per system) and its sign disagreed with the real score on about half my candidate uploads, so the leaderboard was the only reliable judge.
 - **Experiment budget.** I spent it on broad coverage before I knew which episodes mattered. The receipts later showed most systems lost points on **long steady periods**, and only 76 of the 2,000 steps per system were left to collect them.
 - **The biggest gains came from structure, not size:** the inflow curve (+0.084) and the social simulator (+0.06), not larger networks.
-- **Final results** use different hidden episodes, so the real number will differ from 0.757 by up to about 0.01.
+- **Public versus Final.** Final uses different hidden episodes. The mean barely moved (0.7574 on Public, 0.7565 on Final), but individual systems shifted by up to about 0.017 in either direction (wildlife −0.017, hospital queue −0.014, social contagion +0.011). Differences of a few hundredths between systems are within that noise.
 
 ## Code
 
@@ -113,7 +113,7 @@ research/      common.py (loading, CV, sigma calibration helpers), fair_compare.
 predictors/    NumPy inference as submitted: social_contagion_physics, social_contagion_blend,
                reservoir_inflow (wraps a GRU model and overwrites inflow with the fitted sinusoid)
 collect_scenario.py, collect_structured.py   research-run collectors
-assets/        make_charts.py draws the charts above from the recorded Public scores
+assets/        make_charts.py draws the charts above from the recorded scores
 ```
 
 The scripts assume the organizers' participant kit in the working directory (`client.py`, `fit.py`, `example_submission/predict.py`, `briefs.md`), five research runs per system in `research/`, and a calibrated `research/sigma_cal.json`. None of those are included. Trained weights are not included either. The hospital-queue model that shipped isn't in this repository.

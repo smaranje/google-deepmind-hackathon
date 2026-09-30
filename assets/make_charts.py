@@ -27,16 +27,16 @@ PROGRESS = [
     ('Tuned direct\nmodels (rank 45)', 0.525),
     ('GRU state-space\nmodels', 0.686),
     ('+ Reservoir inflow\ncurve (rank 21)', 0.735),
-    ('Final submission\n(expected)', 0.757),
+    ('Final result', 0.757),
 ]
 LEADER = 0.803  # score of rank 1 on the last published board
 
-# (system, first all-ten submission, final submission), Public scores
+# (system, first all-ten submission on the Public board, Final result on the hidden Final episodes)
 SYSTEMS = [
-    ('Ad auction', 0.5485, 0.8667), ('Traffic', 0.5800, 0.8214), ('Wildlife', 0.4803, 0.7988),
-    ('Reservoir', 0.5664, 0.7884), ('Power grid', 0.5803, 0.7455), ('Supply chain', 0.3512, 0.7445),
-    ('Epidemic', 0.3526, 0.7427), ('Hospital queue', 0.5406, 0.7107), ('Market', 0.5081, 0.7009),
-    ('Social contagion', 0.4526, 0.6545),
+    ('Ad auction', 0.5485, 0.8647), ('Traffic', 0.5800, 0.8267), ('Reservoir', 0.5664, 0.7844),
+    ('Wildlife', 0.4803, 0.7819), ('Power grid', 0.5803, 0.7535), ('Epidemic', 0.3526, 0.7511),
+    ('Supply chain', 0.3512, 0.7362), ('Market', 0.5081, 0.7041), ('Hospital queue', 0.5406, 0.6972),
+    ('Social contagion', 0.4526, 0.6655),
 ]
 
 
@@ -60,10 +60,8 @@ def progress(name, t):
     ax.set_xticks(xs); ax.set_xticklabels([n for n, _ in PROGRESS], color=t['ink2'], fontsize=8.5)
     ax.axhline(LEADER, color=t['muted'], linewidth=1.2, linestyle=(0, (4, 3)))
     ax.text(-0.42, LEADER + 0.012, f'Rank 1 on the last published board: {LEADER:.3f}', color=t['muted'], fontsize=8.5, va='bottom')
-    ax.plot(xs[:-1], ys[:-1], color=t['line'], linewidth=2.4, solid_capstyle='round', zorder=3)
-    ax.plot(xs[-2:], ys[-2:], color=t['line'], linewidth=2.4, linestyle=(0, (3, 2.5)), zorder=3)
-    ax.plot(xs[:-1], ys[:-1], 'o', color=t['line'], markersize=8.5, markeredgecolor=t['bg'], markeredgewidth=2, zorder=4)
-    ax.plot(xs[-1:], ys[-1:], 'o', markerfacecolor=t['bg'], markeredgecolor=t['line'], markersize=9, markeredgewidth=2.4, zorder=4)
+    ax.plot(xs, ys, color=t['line'], linewidth=2.4, solid_capstyle='round', zorder=3)
+    ax.plot(xs, ys, 'o', color=t['line'], markersize=8.5, markeredgecolor=t['bg'], markeredgewidth=2, zorder=4)
     ax.annotate(f'{ys[0]:.3f}', (xs[0], ys[0]), xytext=(-12, 0), textcoords='offset points', ha='right', va='center',
                 color=t['ink'], fontsize=10.5, fontweight='bold')
     for i in (1, 3):
@@ -71,8 +69,8 @@ def progress(name, t):
                     color=t['ink'], fontsize=10.5, fontweight='bold')
     ax.annotate(f'{ys[-1]:.3f}', (xs[-1], ys[-1]), xytext=(0, -13), textcoords='offset points', ha='center', va='top',
                 color=t['ink'], fontsize=10.5, fontweight='bold')
-    fig.text(0.075, 0.955, 'Mean Public score over the ten systems', color=t['ink'], fontsize=12.5, fontweight='bold', ha='left', va='top')
-    fig.text(0.075, 0.905, 'From the organizers’ starter model to the final submission', color=t['ink2'], fontsize=9.5, ha='left', va='top')
+    fig.text(0.075, 0.955, 'Mean score over the ten systems', color=t['ink'], fontsize=12.5, fontweight='bold', ha='left', va='top')
+    fig.text(0.075, 0.905, 'Public scores through the build, then the Final result on the hidden Final episodes (0.7565)', color=t['ink2'], fontsize=9.5, ha='left', va='top')
     fig.subplots_adjust(left=0.075, right=0.975, top=0.83, bottom=0.17)
     fig.savefig(OUT / f'progress_{name}.png', facecolor=t['bg']); plt.close(fig)
 
@@ -95,11 +93,11 @@ def systems(name, t):
     ax.annotate('first pass', (a0, 0), xytext=(-10, 0), textcoords='offset points', ha='right', va='center', color=t['ink2'], fontsize=8.5)
     ax.annotate('final', (b0, 0), xytext=(11, 0), textcoords='offset points', ha='left', va='center', color=t['ink2'], fontsize=8.5)
     handles = [Line2D([0], [0], marker='o', color='none', markerfacecolor=t['before'], markeredgecolor=t['bg'], markersize=9, label='First pass over all ten systems'),
-               Line2D([0], [0], marker='o', color='none', markerfacecolor=t['after'], markeredgecolor=t['bg'], markersize=9, label='Final submission')]
+               Line2D([0], [0], marker='o', color='none', markerfacecolor=t['after'], markeredgecolor=t['bg'], markersize=9, label='Final result')]
     leg = ax.legend(handles=handles, loc='lower left', bbox_to_anchor=(0.0, 1.0), ncol=2, frameon=False, fontsize=8.5, handletextpad=0.3, columnspacing=1.6, borderaxespad=0.2)
     for txt in leg.get_texts():
         txt.set_color(t['ink2'])
-    fig.text(0.02, 0.965, 'Public score for each system, before and after', color=t['ink'], fontsize=12.5, fontweight='bold', ha='left', va='top')
+    fig.text(0.02, 0.965, 'Score for each system: first Public pass and Final result', color=t['ink'], fontsize=12.5, fontweight='bold', ha='left', va='top')
     fig.subplots_adjust(left=0.19, right=0.91, top=0.83, bottom=0.06)
     fig.savefig(OUT / f'systems_{name}.png', facecolor=t['bg']); plt.close(fig)
 
