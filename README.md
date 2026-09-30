@@ -66,6 +66,33 @@ Two agent-produced results also failed audit: a reservoir "0.75" that came from 
 - Each candidate had a 4,000-step check (fraction of steps outside the research range ±5%, fraction flat) and a fresh-process 40 × 4,000 contract test on Python 3.12 / NumPy 2.3.5. One model was rewritten for a 17× speed-up to remove timeout risk.
 - The Final submission contains only files byte-identical to uploads that had already scored their numbers on Public.
 
+## Code
+
+Research code written under time pressure and lightly cleaned, not a polished library.
+
+```
+gru/           GRU forecaster
+  train_gru.py      4-fold held-out CV:  python gru/train_gru.py <system> <hidden> <seeds> <epochs>
+  final_fit.py      train on all runs and export weights for the NumPy predictor
+  predict.py        NumPy inference (what the grader runs)
+  ensemble.py       mixed-size ensembles, CV and final fit
+  metric_*.py       score-aligned fine-tuning (L1 warm-up, then the score itself)
+  hold_*.py         long-hold weighting;  clock_cv.py: seasonal-input ablation
+  train_gru2.py     EMA-input variant (with predict_ema.py)
+diffsim/       differentiable simulators
+  social.py         social-contagion simulator with switchable memory gates, plus CV
+  social_*.py       restarts, physics/GRU blend weights, final fit
+  hospital.py, hosp_pigru.py   hospital-queue simulator and a GRU fed with its forecasts (exploratory, not shipped)
+direct/, direct2/   ridge action-history baselines
+research/      common.py (loading, CV, sigma calibration helpers), fair_compare.py, blend_cv.py,
+               time_diag.py (error by time and by observable), reservoir_inflow_fit.py
+predictors/    NumPy inference as submitted: social_contagion_physics, social_contagion_blend,
+               reservoir_inflow (wraps a GRU model and overwrites inflow with the fitted sinusoid)
+collect_scenario.py, collect_structured.py   research-run collectors
+```
+
+The scripts assume the organizers' participant kit in the working directory (`client.py`, `fit.py`, `example_submission/predict.py`, `briefs.md`), five research runs per system in `research/`, and a calibrated `research/sigma_cal.json`. None of those are included. Trained weights are not included either. The hospital-queue model that shipped was built by an agent and isn't in this repository.
+
 ## Not included
 
-Competition data, credentials and hidden scoring details.
+Competition data, kit files, trained weights, the calibrated σ values, credentials and hidden scoring details.
