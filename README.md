@@ -2,7 +2,7 @@
   <img src="https://datasciencefestival.com/wp-content/uploads/2023/09/google-deepmind-logo.webp" alt="Google DeepMind" width="320">
 </p>
 
-# Predicting what happens when you change the controls
+# Google DeepMind Hackathon 2026
 
 **Ten hidden systems. A small experiment budget. Forecast 4,000 steps ahead with no feedback.** My entry to the Google DeepMind GroundTruth challenge (Toronto, September 2026).
 
