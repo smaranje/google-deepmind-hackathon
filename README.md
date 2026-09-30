@@ -32,7 +32,7 @@ Each system has named controls and a few noisy readings. Equations and parameter
 | **Power grid** | How to keep frequency stable while shifting demand and dispatching reserves | price signal, reserve dispatch, charging, interconnector → load, frequency, renewable share | GRU blended with a simple regression | 0.746 |
 | **Supply chain** | How ordering and staffing move inventory and shipments | order size, lead time, product mix, effort, maintenance → shipments, supplier and retail stock | action-history regression with physical limits (no negative stock, supplier cap) | 0.745 |
 | **Epidemic** | Which mix of school closure, masks and vaccination limits cases and hospital strain | 3 policies → daily cases, hospital load | GRU | 0.743 |
-| **Hospital queue** | When staffing, overtime and scheduling keep waits down without burning out staff | 6 controls → wait time, queue length, discharges | physics-style model + GRU (built by an agent) | 0.711 |
+| **Hospital queue** | When staffing, overtime and scheduling keep waits down without burning out staff | 6 controls → wait time, queue length, discharges | physics-style model + GRU | 0.711 |
 | **Market** | How interest rates and a transaction tax move price, volume and liquidity | interest rate, tax → price, volume, order-book depth | GRU trained with extra weight on long steady periods | 0.701 |
 | **Social contagion** | How seeding, incentives and outreach spread adoption across two communities | seeding, incentive, bridge outreach → adopters in each community | **physics simulator + GRU blend** | 0.655 |
 
@@ -77,7 +77,7 @@ Research runs        Learn the dynamics                    Forecast
 | Bigger networks and 10-network ensembles for social contagion | looked better | 0.592 → 0.541 and 0.551 |
 | Seasonal "clock" inputs for epidemic | rhythm was real but tiny | not submitted; the network overfit it in testing |
 
-Two results from AI agents also failed my audit. One "0.75" for reservoir came from a data leak (0.63 once removed). One "physics" model for epidemic turned out to output a plain GRU, with the physics branch unused.
+Two AI-generated results also failed my audit. One "0.75" for reservoir came from a data leak (0.63 once removed). One "physics" model for epidemic turned out to output a plain GRU, with the physics branch unused.
 
 ## Limits and lessons
 
@@ -88,7 +88,7 @@ Two results from AI agents also failed my audit. One "0.75" for reservoir came f
 
 ## How this was built
 
-I worked with AI coding agents throughout. They wrote and ran most of the code and analysis, and I directed the work, judged the results and did the uploads. Any gain an agent claimed was re-run independently before I used it.
+I used AI coding assistants for implementation and analysis, working with them like a pair. I set the strategy and priorities, decided which ideas to pursue (for example, going back to the rules and switching to recurrent networks when linear models plateaued), chose what to upload, and used the leaderboard results to decide what to keep. Any gain an assistant reported was re-run independently before I relied on it.
 
 ## Code
 
@@ -115,7 +115,7 @@ predictors/    NumPy inference as submitted: social_contagion_physics, social_co
 collect_scenario.py, collect_structured.py   research-run collectors
 ```
 
-The scripts assume the organizers' participant kit in the working directory (`client.py`, `fit.py`, `example_submission/predict.py`, `briefs.md`), five research runs per system in `research/`, and a calibrated `research/sigma_cal.json`. None of those are included. Trained weights are not included either. The hospital-queue model that shipped was built by an agent and isn't in this repository.
+The scripts assume the organizers' participant kit in the working directory (`client.py`, `fit.py`, `example_submission/predict.py`, `briefs.md`), five research runs per system in `research/`, and a calibrated `research/sigma_cal.json`. None of those are included. Trained weights are not included either. The hospital-queue model that shipped isn't in this repository.
 
 ## Not included
 
