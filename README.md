@@ -51,15 +51,15 @@ Research runs        Learn the dynamics                    Forecast
                      └─ + physics/structure where data is thin   and the control schedule only
 ```
 
-**1. Collect the right experiments.** The scoring uses four kinds of episodes: long steady operation, reordered actions, repeated stress with rest, and controls changed alone or together. I collected runs shaped like those, including the "recovery" and "pulse" settings each brief describes.
+**1. Collect the right experiments.** The scoring uses four kinds of episodes: long steady operation, reordered actions, repeated stress with rest, and controls changed alone or together. The research runs were shaped like those, including the "recovery" and "pulse" settings each brief describes.
 
-**2. Work out the scoring tolerance.** My local scores were far above the leaderboard's (0.84 vs 0.51 on one system). Treating each leaderboard score as a measurement, I solved for the hidden tolerance σ that made my cross-validated errors reproduce it. It was about 0.12–0.78 times the spread of the data, much stricter than I had assumed. Every model comparison after that was more trustworthy.
+**2. Work out the scoring tolerance.** My local scores were far above the leaderboard's (0.84 vs 0.51 on one system). Treating each leaderboard score as a measurement, the hidden tolerance σ was solved for: the value that made the cross-validated errors reproduce it. It was about 0.12–0.78 times the spread of the data, much stricter than I had assumed. Every model comparison after that was more trustworthy.
 
 **3. Learn the dynamics with a GRU.** A GRU is a small neural network that carries a hidden state, which is exactly what these systems need to represent their queues, stocks and fatigue. It takes the schedule of controls as input and predicts every reading for all 4,000 steps. Its starting state comes from the first reading, and it never sees a real reading again. That matters: a model that feeds on its own predictions piles up small errors over thousands of steps. The organizers' starter model did this, and it scored 0.387 on power grid, worse than repeating the first reading.
 
 **4. Add structure where the network can't find it alone.** Two examples:
 - *Reservoir inflow* is a fixed seasonal cycle that ignores the controls (the same at each step across independent runs, correlation 0.995). Replacing the network's inflow with a fitted sine wave (period about 68 steps) lifted reservoir from 0.705 to 0.788.
-- *Social contagion* has boom-and-bust adoption, an onboarding queue, a cooldown period for people who lose interest, and shared staff. I wrote these as a differentiable simulator (about 25 parameters) trained end to end on whole runs. Blended 60/40 with a GRU, it scored 0.655, against 0.592 for the best network. Held-out tests also pointed to which two hidden mechanisms are active: credibility and incentive expectations.
+- *Social contagion* has boom-and-bust adoption, an onboarding queue, a cooldown period for people who lose interest, and shared staff. These are modeled as a differentiable simulator (about 25 parameters) trained end to end on whole runs. Blended 60/40 with a GRU, it scored 0.655, against 0.592 for the best network. Held-out tests also pointed to which two hidden mechanisms are active: credibility and incentive expectations.
 
 **5. Ship only what has been proven.** Every candidate got a 4,000-step stability check and a full-scale timing test. The Final submission contains only files that had already scored their numbers on the Public leaderboard.
 
@@ -89,10 +89,6 @@ Two AI-generated results also failed my audit. One "0.75" for reservoir came fro
 - **Experiment budget.** I spent it on broad coverage before I knew which episodes mattered. The receipts later showed most systems lost points on **long steady periods**, and only 76 of the 2,000 steps per system were left to collect them.
 - **The biggest gains came from structure, not size:** the inflow curve (+0.084) and the social simulator (+0.06), not larger networks.
 - **Final results** use different hidden episodes, so the real number will differ from 0.757 by up to about 0.01.
-
-## How this was built
-
-I used AI coding assistants for implementation and analysis, working with them like a pair. I set the strategy and priorities, decided which ideas to pursue (for example, going back to the rules and switching to recurrent networks when linear models plateaued), chose what to upload, and used the leaderboard results to decide what to keep. Any gain an assistant reported was re-run independently before I relied on it.
 
 ## Code
 
