@@ -2,101 +2,62 @@
   <img src="https://datasciencefestival.com/wp-content/uploads/2023/09/google-deepmind-logo.webp" alt="Google DeepMind" width="320">
 </p>
 
-# 10 Black Boxes. 40 Hours. 0.04 → 0.76.
+# InstaLILY × Google DeepMind GroundTruth challenge: my approach
 
-> *Ten hidden simulators. Equations sealed. A budget of 2,000 experiments each, and one shot to predict 4,000 steps into the future with nobody telling you how you're doing.*
+Notes on my entry to the GroundTruth research and forecasting challenge (Toronto, September 2026). I joined with about 40 hours left, worked with AI coding agents that wrote and ran most of the code, and drove the process myself: choosing what to try, reading the leaderboard feedback, and deciding what to upload.
 
-My entry to the **InstaLILY × Google DeepMind GroundTruth challenge**, Toronto, September 2026.
+## The challenge
 
----
+There are ten hidden simulators: epidemic, market, traffic, power grid, supply chain, wildlife, reservoir, ad auction, social contagion and hospital queue. For each one you get 2,000 experiment steps through an API and see a few noisy readings. You then submit a `predict()` function that forecasts 4,000 steps ahead from a starting reading and a full action schedule, with no feedback while forecasting. It runs offline with NumPy/SciPy only.
 
-## The setup
+Each step is scored as `1 / (1 + |error| / σ)`, where σ is a hidden scale set by the organizers. The overall score is the mean over the ten systems. In every system, two of three described "memory" mechanisms are active, and you aren't told which.
 
-Ten simulated worlds: **epidemic, market, traffic, power grid, supply chain, wildlife, reservoir, ad auction, social contagion, hospital queue.** You can poke each one through an API and watch a few noisy readings come back. That's it. The equations are hidden, and in every world *exactly two of three secret mechanisms are secretly switched on*. Nobody tells you which.
+## Results
 
-Then comes the exam: predict **4,000 steps** of a system you've barely touched, under action schedules you've never seen, with **zero feedback while forecasting**. Every step is scored as `1 / (1 + error/σ)`, and σ, the yardstick, is a secret too.
-
-The clock on my side: **about 40 hours left** when I started.
-
-## The climb
-
-| Moment | Score |
+| Point in time | Public score (mean over 10 systems) |
 |---|---|
-| First upload: the organizers' starter model, one system | **0.039** overall |
-| Every system covered for the first time | 0.496 |
-| First neural state-space models | 0.686 |
-| Reservoir discovery + physics for the hardest system | 0.73 |
-| **Final submission** | **≈ 0.757** |
+| First upload (organizers' starter model, one system only) | 0.039 |
+| First model for all ten systems | 0.496 |
+| After switching to GRU models | 0.686 |
+| End of the second day | about 0.73 (rank 22 of 125 on the published board) |
+| Final submission (best model per system) | about 0.757 expected, based on Public scores |
 
-Final Public scores: ad auction **0.867** · traffic **0.821** · wildlife **0.799** · reservoir **0.788** · power grid 0.746 · supply chain 0.745 · epidemic 0.743 · hospital queue 0.711 · market 0.701 · social contagion 0.655.
+The Final results weren't published when I wrote this, and Final uses different hidden episodes from Public, so the real number will differ a little. I'll update this page when it's out.
 
-From 45th place to the top tier of a 125-person field in a day and a half. Not the win. But here's how it went.
+Per-system Public scores of the final submission: ad auction 0.867, traffic 0.821, wildlife 0.799, reservoir 0.788, power grid 0.746, supply chain 0.745, epidemic 0.743, hospital queue 0.711, market 0.701, social contagion 0.655.
 
----
+## What worked
 
-## Act I: My own scoreboard was lying to me
+- **Working out the hidden scoring scale.** My own test scores were far higher than the leaderboard's (0.84 locally against 0.51 on the board). I solved for the value of σ that made my cross-validated errors match each real score. It was about 0.12–0.78 times the spread of the data, much stricter than I had assumed. After that, model comparisons were much more reliable.
+- **GRU models.** Linear and ridge models stopped improving at about 0.55–0.60. Small GRUs (hidden size 32–64) that read the action schedule and carry a hidden state, trained on whole free-running rollouts, lifted the score a lot (epidemic went from 0.39 to 0.74). They're trained in PyTorch and re-implemented in plain NumPy for the grader.
+- **A pattern in reservoir inflow.** In five separate runs, inflow was identical at the same step no matter what the controls did (correlation 0.995). It fits a single sine wave with a period of about 68 steps. Replacing the model's inflow with that formula raised reservoir from 0.705 to 0.788.
+- **A physics model for social contagion.** Neural models stalled around 0.59. A small differentiable simulator with queues, a cooldown pool and memory mechanisms (22 parameters), blended 60/40 with a GRU, scored 0.655. Held-out tests pointed to credibility plus incentive expectations as the active mechanisms.
+- **Reading the score receipts.** They split each score into sustained (long constant hold) episodes and the rest. Most systems lost points on long holds, because my research runs never held a setting for longer than about 180 steps. Training that puts more weight on long holds raised traffic from 0.812 to 0.821.
 
-My models "scored" 0.84 in my tests. The leaderboard said **0.51**.
+## What didn't work
 
-Something was badly wrong. So I turned the leaderboard into an instrument: I solved for the hidden σ, finding the yardstick at which my cross-validated errors reproduced each real score. It was **3-8× stricter** than I'd assumed. Every decision after that used the calibrated metric.
+- A blend that added ridge regression to the GRU looked better in testing but dropped market from 0.700 to 0.605 on the real board. Regression models drift over 4,000 steps.
+- Larger networks and 10-network ensembles helped some systems and hurt others. Short-run cross-validation often predicted the wrong direction.
+- Seasonal clock inputs for epidemic overfit.
+- A physics model for supply chain scored 0.532, against 0.745 for the model it was meant to replace, and I had to revert it.
+- Physics models for traffic, market and power grid didn't beat the GRUs in the time I had.
 
-## Act II: The model that was worse than doing nothing
+## Process
 
-My first submission scored 0.387 on power grid. I checked it against a run it had never seen: worse than just repeating the initial reading. The starter model steps forward from its own last prediction, so tiny errors compound across 4,000 steps like a rounding error in a rocket trajectory.
+- Every cross-validation fold refits all parameters. One AI-generated "0.75" for reservoir dropped to 0.63 once a data leak was removed.
+- Each model got a 4,000-step check for drift outside the data range and for flat-lining, and a runtime test at the full 40 × 4,000 steps under the time limit.
+- The Final submission contains only files that had already scored their numbers on the Public leaderboard.
 
-The fix was a different *kind* of model: small **GRUs** that read the action schedule and carry their own hidden state, trained on whole free-running rollouts so they can't feed on their own mistakes. Trained in PyTorch, then rewritten in ~40 lines of pure NumPy, because the grader has no deep-learning libraries (difference under 1e-4).
+## Lessons
 
-**One upload. 0.525 → 0.686.** Epidemic went from 0.39 to 0.74.
+1. Deciding what data to collect is the most important step. Spending part of the budget on very long holds would have been worth more than any modeling trick.
+2. Test at the length you'll be scored on. Models that win on 460-step runs can lose on 4,000-step episodes.
+3. With little data, structure beats size. The biggest gains came from understanding a system, not from bigger networks.
 
-## Act III: The number hiding in plain sight
+## How this was built
 
-Per-output breakdowns showed one weak spot: reservoir **inflow**. Across five independent runs, inflow was **identical at the same step** (correlation 0.995) no matter what I did to the controls. It wasn't a system response. It was a clock.
+I worked with AI coding agents throughout. They wrote and ran most of the code and analysis, and I directed the work, judged the results and did the uploads. I re-checked each claimed improvement against the real leaderboard before relying on it, since the agents sometimes overstated results.
 
-A pure sinusoid, period ≈ 67.8 steps. I fitted it on the first 256 steps, confirmed it on steps 256-450 it had never seen, and replaced the network's inflow with the formula.
+Stack: Python, PyTorch (training), NumPy/SciPy (inference).
 
-**Reservoir: 0.705 → 0.788.** One insight, +0.084.
-
-## Act IV: Physics beats the neural net
-
-**Social contagion**: boom-and-bust adoption, onboarding queues, cooldown pools, shared staff, memory. Every neural variant got stuck near 0.59, and the score jumped around by ±0.05 depending only on the random seed.
-
-So I wrote the brief's physics as a **differentiable simulator** in PyTorch: adopters, interest queue, cooldown pool, shared onboarding workforce, and three switchable memory mechanisms. It has **22 parameters**, and it can't memorize noise.
-
-- It **beat the GRU on held-out runs.**
-- Held-out selection pinned the hidden mechanisms: **credibility + incentive expectations.**
-- Blended 60/40 with a GRU: **0.592 → 0.655** on the real leaderboard.
-
-## Act V: The receipts told me where the bodies were buried
-
-The score receipts split results into *sustained* vs. *other* episodes, and the truth came out: six systems were quietly bleeding points on **long constant holds**: supply chain **0.58**, market 0.62, traffic 0.63. My research runs never held a setting longer than ~180 steps, so the models had never seen how these systems settle.
-
-Re-weighting training toward steps deep inside holds lifted **traffic 0.812 → 0.821** and market slightly.
-
----
-
-## The rules I lived by (after breaking them)
-
-- **Validation without leakage.** Every fold refits every parameter. One AI-generated "0.75" evaporated to **0.63** once the leak was removed.
-- **4,000-step drift checks.** Caught two models that looked perfect on short runs and would have gone off the rails at the real horizon.
-- **A grader harness:** fresh processes, 40 × 4,000 steps, Python 3.12 / NumPy 2.3.5, deterministic. One model was sped up **17×** to remove any timeout risk.
-- **Only promote what has already scored.** The Final submission is byte-identical to files that had proven their score on the Public leaderboard.
-- **Distrust every claim,** including my own and my AI agents'. I ran several AI coding agents in parallel and re-verified every "win" before shipping it.
-
-## What blew up in my face
-
-- A **regression blend** that looked +0.03 better in testing dropped market from **0.700 to 0.605** on the real board. Regression drifts over long horizons. I learned it publicly.
-- **10-network ensembles** helped wildlife and hurt other systems. Short-run cross-validation often predicted the wrong sign.
-- **Seasonal "clock" inputs** for epidemic: the rhythm was real but tiny, and it made the network overfit.
-- A physics model for supply chain that scored **0.53 against a 0.74 baseline**, and an undo upload that saved the day.
-
-## What I'd do differently
-
-1. **Spend the experiment budget like it's gold.** It was the only source of truth, and I burned it on broad coverage before knowing what mattered. Long holds would have been worth more than any modeling trick.
-2. **Validate at the target horizon.** Models that win at 460 steps can lose at 4,000.
-3. **Structure beats capacity when data is scarce.** The biggest jumps all came from *understanding* a system (the inflow clock, the queue physics), not from making a network bigger.
-
----
-
-**Stack:** Python · PyTorch (training) · NumPy/SciPy (inference) · differentiable simulation · GRU state-space models · AI coding agents
-
-*Competition data, credentials and hidden-scoring details are not included, out of respect for the organizers' rules.*
+Competition data, credentials and hidden scoring details aren't included.
