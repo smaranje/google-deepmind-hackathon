@@ -9,9 +9,9 @@
 **In short**
 - The task: learn how a system responds to decisions (staffing, tolls, vaccination rates, water release) from under 2,000 experimental steps, then forecast a long sequence of decisions nobody has tried yet.
 - What I built: a neural network with memory (a GRU) per system, plus physics-style models where the data was too thin for a network to work out the structure.
-- Result: the mean score went from **0.04 to 0.757** in roughly 40 hours. The **Final score is 0.7565** on the hidden Final episodes, within 0.001 of what the Public scores predicted.
+- Result: **4th place on the Final leaderboard**, with a mean score of **0.7565** on the hidden Final episodes. The score went from 0.04 to 0.757 in roughly 40 hours, and the Final mean landed within 0.001 of what the Public scores predicted.
 
-![Line chart of the mean score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and 0.757 for the final submission. Rank 1 on the last published Public board was 0.803.](assets/progress_light.png)
+![Line chart of the mean score over the ten systems: 0.039 for the starter model, 0.496 after a first pass on all ten systems, 0.525 with tuned direct models, 0.686 with GRU models, 0.735 after adding the reservoir inflow curve, and 0.757 for the final submission, which placed 4th on the Final leaderboard. Rank 1 on the last published Public board was 0.803.](assets/progress_light.png)
 
 ## Why this kind of forecasting matters
 

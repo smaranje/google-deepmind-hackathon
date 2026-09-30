@@ -27,7 +27,7 @@ PROGRESS = [
     ('Tuned direct\nmodels (rank 45)', 0.525),
     ('GRU state-space\nmodels', 0.686),
     ('+ Reservoir inflow\ncurve (rank 21)', 0.735),
-    ('Final result', 0.757),
+    ('Final result\n(4th place)', 0.757),
 ]
 LEADER = 0.803  # score of rank 1 on the last published board
 
