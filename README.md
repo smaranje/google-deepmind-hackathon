@@ -2,62 +2,70 @@
   <img src="https://datasciencefestival.com/wp-content/uploads/2023/09/google-deepmind-logo.webp" alt="Google DeepMind" width="320">
 </p>
 
-# InstaLILY × Google DeepMind GroundTruth challenge: my approach
+# Long-horizon forecasting of ten black-box simulators under a small experiment budget
 
-Notes on my entry to the GroundTruth research and forecasting challenge (Toronto, September 2026). I joined with about 40 hours left, worked with AI coding agents that wrote and ran most of the code, and drove the process myself: choosing what to try, reading the leaderboard feedback, and deciding what to upload.
+Technical notes on my entry to the Google DeepMind GroundTruth challenge (Toronto, September 2026). I joined with about 40 hours left. AI coding agents wrote and ran most of the code; I chose directions, read the leaderboard feedback and decided what to upload. Model choices were validated against Public leaderboard scores wherever possible, because local cross-validation proved unreliable (see *Process*).
 
-## The challenge
+## Problem
 
-There are ten hidden simulators: epidemic, market, traffic, power grid, supply chain, wildlife, reservoir, ad auction, social contagion and hospital queue. For each one you get 2,000 experiment steps through an API and see a few noisy readings. You then submit a `predict()` function that forecasts 4,000 steps ahead from a starting reading and a full action schedule, with no feedback while forecasting. It runs offline with NumPy/SciPy only.
+Ten hidden simulators (epidemic, market, traffic, power grid, supply chain, wildlife, reservoir, ad auction, social contagion, hospital queue), each with 2–6 bounded controls and 2–4 noisy observables. Per system: 2,000 simulator steps for research, then a `predict(initial, interventions, context)` submission that must return **4,000 open-loop steps** from a noisy initial reading and the full action schedule, NumPy/SciPy only, 40 hidden episodes, 1,200 s total.
 
-Each step is scored as `1 / (1 + |error| / σ)`, where σ is a hidden scale set by the organizers. The overall score is the mean over the ten systems. In every system, two of three described "memory" mechanisms are active, and you aren't told which.
+Score per (observable, tick): `1 / (1 + |e| / σ)`, with σ hidden. Episodes are split evenly into sustained operation, action order, recovery history and composition. Each system has three candidate memory mechanisms, exactly two of which are active.
 
-## Results
+The main difficulty is generalization in **horizon** (research runs of about 250–510 steps against 4,000-step scoring) and in **schedule** (long constant holds and pulse-recovery sequences that a random research policy rarely produces).
 
-| Point in time | Public score (mean over 10 systems) |
+## Results (Public leaderboard, mean over 10 systems)
+
+| Stage | Score |
 |---|---|
-| First upload (organizers' starter model, one system only) | 0.039 |
-| First model for all ten systems | 0.496 |
-| After switching to GRU models | 0.686 |
-| End of the second day | about 0.73 (rank 22 of 125 on the published board) |
-| Final submission (best model per system) | about 0.757 expected, based on Public scores |
+| Organizers' one-step linear starter, one system submitted | 0.039 |
+| Ridge/starter models, all ten systems | 0.496 |
+| GRU state-space models | 0.686 |
+| + reservoir inflow model, social-contagion simulator blend | 0.73 (rank 22 of 125 on the published board) |
+| Final submission (best proven model per system) | 0.757 expected from Public scores; Final not yet published |
 
-The Final results weren't published when I wrote this, and Final uses different hidden episodes from Public, so the real number will differ a little. I'll update this page when it's out.
+Final per-system Public scores: ad auction 0.867, traffic 0.821, wildlife 0.799, reservoir 0.788, power grid 0.746, supply chain 0.745, epidemic 0.743, hospital queue 0.711, market 0.701, social contagion 0.655. Final uses different hidden episodes, so expect a shift of a few thousandths to about 0.01.
 
-Per-system Public scores of the final submission: ad auction 0.867, traffic 0.821, wildlife 0.799, reservoir 0.788, power grid 0.746, supply chain 0.745, epidemic 0.743, hospital queue 0.711, market 0.701, social contagion 0.655.
+## Methods
 
-## What worked
+**Evaluation protocol.** Five research runs per system (three random-style, two shaped like the recovery→pulse scenarios in the briefs). Leave-one-run-out over the four non-initial runs, with *all* parameters refit inside each fold. Scores are reported separately for random-style and scenario-style folds.
 
-- **Working out the hidden scoring scale.** My own test scores were far higher than the leaderboard's (0.84 locally against 0.51 on the board). I solved for the value of σ that made my cross-validated errors match each real score. It was about 0.12–0.78 times the spread of the data, much stricter than I had assumed. After that, model comparisons were much more reliable.
-- **GRU models.** Linear and ridge models stopped improving at about 0.55–0.60. Small GRUs (hidden size 32–64) that read the action schedule and carry a hidden state, trained on whole free-running rollouts, lifted the score a lot (epidemic went from 0.39 to 0.74). They're trained in PyTorch and re-implemented in plain NumPy for the grader.
-- **A pattern in reservoir inflow.** In five separate runs, inflow was identical at the same step no matter what the controls did (correlation 0.995). It fits a single sine wave with a period of about 68 steps. Replacing the model's inflow with that formula raised reservoir from 0.705 to 0.788.
-- **A physics model for social contagion.** Neural models stalled around 0.59. A small differentiable simulator with queues, a cooldown pool and memory mechanisms (22 parameters), blended 60/40 with a GRU, scored 0.655. Held-out tests pointed to credibility plus incentive expectations as the active mechanisms.
-- **Reading the score receipts.** They split each score into sustained (long constant hold) episodes and the rest. Most systems lost points on long holds, because my research runs never held a setting for longer than about 180 steps. Training that puts more weight on long holds raised traffic from 0.812 to 0.821.
+**Recovering σ.** Local scores were far above the leaderboard's (0.84 vs 0.51 on one system). The Public score of each early submission was treated as a measurement, and I solved per system for a scalar `c` such that σ = c · std(data) makes the cross-validated errors reproduce it. `c` came out between 0.12 and 0.78 (much tighter than the data spread I had assumed), and the calibrated local scores tracked Public scores with r ≈ 0.75. This is a per-system point estimate, not the organizers' σ, and it is noisy.
 
-## What didn't work
+**Models.**
+- *Baselines.* The kit's one-step linear state-space model, and "direct" ridge regression from action-history features (EMAs at several half-lives, pairwise products, decayed initial state) to observables. The one-step model compounds error across 4,000 steps and was worse than persistence on a held-out run (0.435 vs 0.507). Direct ridge plateaued around 0.55–0.60.
+- *GRU forecaster.* Inputs are min-max-scaled actions only, with no observation feedback after t = 0. The hidden state is initialized as `tanh(W·x0 + b)` from the normalized initial reading. Hidden size 32–64, linear read-out. Trained full-batch on entire rollouts (free-running by construction) with σ-weighted smooth-L1 (β = 0.05), Adam (lr 3e-3, weight decay 1e-4, cosine schedule, gradient clip 1.0), 1,500 epochs. Trained in PyTorch, exported to a ~40-line NumPy GRU (max |Δ| < 5e-4 vs torch). Ensembles average 2–10 nets.
+- *Structural findings.* A per-observable cross-run check, correlating each output across independent runs at the same tick, showed reservoir inflow is action-independent (correlation 0.995). It fits a single sinusoid, period ≈ 67.8 ticks, fitted on ticks ≤ 256 and checked on ticks 256–450 (inflow score 0.93 out of sample). Replacing the network's inflow with the closed form took reservoir from 0.705 to 0.788 (+0.084).
+- *Differentiable simulator (social contagion).* Per community: adopters, interest queue, cooldown pool and eligible population, with a shared onboarding workforce whose capacity falls with total adopters, plus credibility, incentive-expectation and cross-community memory states behind switchable gates. About 25 scalar parameters, fit end-to-end on free-running rollouts (Adam, lr 3e-2). The gate pair was chosen only by held-out score: credibility + expectations 0.572/0.586 (random/scenario folds), against 0.458/0.446 and 0.536/0.574 for the other pairs, and 0.496/0.575 for the best GRU. A 0.6 physics + 0.4 GRU blend (weight from a held-out grid) scored 0.655 on Public against 0.592 for the GRU.
+- *Long-hold weighting.* The score receipts report two bands, sustained episodes ("id") and the other three categories ("extrapolation"). Sustained-band scores were the weakest almost everywhere: supply chain 0.575, market 0.621, traffic 0.626, power grid 0.681, against 0.73–0.87 on the other bands for those four systems. Upweighting training ticks at least 30 steps into a constant-action hold (weight 4×) improved held-out deep-hold scores on scenario folds and moved traffic 0.812 → 0.821.
 
-- A blend that added ridge regression to the GRU looked better in testing but dropped market from 0.700 to 0.605 on the real board. Regression models drift over 4,000 steps.
-- Larger networks and 10-network ensembles helped some systems and hurt others. Short-run cross-validation often predicted the wrong direction.
-- Seasonal clock inputs for epidemic overfit.
-- A physics model for supply chain scored 0.532, against 0.745 for the model it was meant to replace, and I had to revert it.
-- Physics models for traffic, market and power grid didn't beat the GRUs in the time I had.
+## Negative results
+
+| Attempt | Held-out signal | Public outcome |
+|---|---|---|
+| Per-observable blend of GRU with ridge (regression weights 0.6–0.7 on price/volume) | +0.004 / +0.033 | market 0.700 → **0.605**. Ridge drifts *inside* the data range over 4,000 steps, so the range-based drift check passed. |
+| Physics + GRU for supply chain | +0.15 | 0.745 → **0.532** |
+| Bigger GRU (H64, 3,000 epochs) and 10-net ensemble on social contagion | positive | 0.592 → 0.541 and 0.551 |
+| Agent-built structured model + GRU correction (teacher-forced fit) on social contagion | 0.525 vs 0.532 for the GRU | 0.592 → 0.480 |
+| Metric-aligned fine-tuning (L1, then the score itself) | wins on 3 systems | wildlife 0.799 → 0.794 |
+| Long-hold weighting | mixed | up on traffic (0.812 → 0.821) and market (+0.001); down on epidemic, reservoir and supply chain (0.745 → 0.672) |
+| Seasonal clock inputs (sin/cos) for epidemic | rhythm real but ≈0.3σ | not submitted; held-out 0.698 → 0.654 (random folds), 0.686 → 0.558 (scenario folds) |
+| Physics models for traffic, market, power grid | not competitive | not submitted |
+
+Two agent-produced results also failed audit: a reservoir "0.75" that came from refitting simulator parameters on the held-out run (0.63 after fixing the leak), and an epidemic "physics" candidate whose final output turned out to be a GRU with the physical branch unused.
+
+## What I'd do differently
+
+1. **Spend the experiment budget on the schedules that get scored.** I used it on broad random and structured coverage before knowing which episodes mattered. About 76 of 2,000 steps per system remained when the receipts showed sustained-hold episodes were the main loss, far too few to collect long holds.
+2. **Validate at the target horizon.** Five runs of ≤ 510 steps make cross-validation noisy (roughly ±0.03 per system) and biased toward short-horizon behaviour. Its sign disagreed with Public on roughly half of my candidate uploads, so Public feedback was the only reliable judge and I had only three slots per system per day.
+3. **Prefer structure over capacity.** The two largest single gains (inflow, +0.084; the social-contagion simulator, +0.06) came from identifying structure, not from bigger networks.
 
 ## Process
 
-- Every cross-validation fold refits all parameters. One AI-generated "0.75" for reservoir dropped to 0.63 once a data leak was removed.
-- Each model got a 4,000-step check for drift outside the data range and for flat-lining, and a runtime test at the full 40 × 4,000 steps under the time limit.
-- The Final submission contains only files that had already scored their numbers on the Public leaderboard.
+- All folds refit all parameters. Any gain claimed by an agent was independently re-run before use.
+- Each candidate had a 4,000-step check (fraction of steps outside the research range ±5%, fraction flat) and a fresh-process 40 × 4,000 contract test on Python 3.12 / NumPy 2.3.5. One model was rewritten for a 17× speed-up to remove timeout risk.
+- The Final submission contains only files byte-identical to uploads that had already scored their numbers on Public.
 
-## Lessons
+## Not included
 
-1. Deciding what data to collect is the most important step. Spending part of the budget on very long holds would have been worth more than any modeling trick.
-2. Test at the length you'll be scored on. Models that win on 460-step runs can lose on 4,000-step episodes.
-3. With little data, structure beats size. The biggest gains came from understanding a system, not from bigger networks.
-
-## How this was built
-
-I worked with AI coding agents throughout. They wrote and ran most of the code and analysis, and I directed the work, judged the results and did the uploads. I re-checked each claimed improvement against the real leaderboard before relying on it, since the agents sometimes overstated results.
-
-Stack: Python, PyTorch (training), NumPy/SciPy (inference).
-
-Competition data, credentials and hidden scoring details aren't included.
+Competition data, credentials and hidden scoring details.
